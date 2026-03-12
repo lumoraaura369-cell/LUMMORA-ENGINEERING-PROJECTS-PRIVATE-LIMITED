@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HireXO — Admin Control Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --neon-cyan:#00f5ff;--neon-green:#39ff14;--neon-gold:#ffd700;
+  --neon-red:#ff4757;--neon-purple:#b537f2;--neon-orange:#ff9500;
+  --deep-blue:#060a14;--mid-blue:#0a1020;
+  --card-bg:rgba(0,15,35,0.92);--text-primary:#d0f0ff;--text-muted:#5a8aa0;
+  --border-glow:1px solid rgba(0,245,255,0.2);
+  --glow-cyan:0 0 20px #00f5ff88,0 0 40px #00f5ff33;
+  --glow-green:0 0 20px #39ff1488;--glow-gold:0 0 20px #ffd70088;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--deep-blue);color:var(--text-primary);font-family:'Exo 2',sans-serif;min-height:100vh;overflow-x:hidden;}
+.bg-grid{position:fixed;top:0;left:0;width:100%;height:100%;background-image:linear-gradient(rgba(0,245,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,0.025) 1px,transparent 1px);background-size:60px 60px;z-index:0;animation:gridMove 25s linear infinite;pointer-events:none;}
+@keyframes gridMove{0%{background-position:0 0}100%{background-position:60px 60px}}
+.scanline{position:fixed;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--neon-gold),transparent);opacity:0.06;z-index:100;animation:scan 12s linear infinite;pointer-events:none;}
+@keyframes scan{0%{top:0}100%{top:100%}}
+.corner{position:fixed;width:40px;height:40px;z-index:200;pointer-events:none;opacity:0.6;}
+.corner-tl{top:10px;left:10px;border-top:2px solid var(--neon-gold);border-left:2px solid var(--neon-gold);}
+.corner-tr{top:10px;right:10px;border-top:2px solid var(--neon-gold);border-right:2px solid var(--neon-gold);}
+.corner-bl{bottom:10px;left:10px;border-bottom:2px solid var(--neon-gold);border-left:2px solid var(--neon-gold);}
+.corner-br{bottom:10px;right:10px;border-bottom:2px solid var(--neon-gold);border-right:2px solid var(--neon-gold);}
+
+/* ===== LOGIN ===== */
+#loginScreen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;background:var(--deep-blue);}
+.login-box{width:100%;max-width:440px;text-align:center;}
+.logo-orb{width:90px;height:90px;border-radius:50%;background:conic-gradient(from 0deg,#ffd700,#ff9500,#b537f2,#ffd700);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:var(--glow-gold);animation:orbPulse 3s ease-in-out infinite;}
+@keyframes orbPulse{0%,100%{box-shadow:0 0 30px #ffd70066}50%{box-shadow:0 0 70px #ffd700aa,0 0 120px #ff950033}}
+.login-card{background:var(--card-bg);border:1px solid rgba(255,215,0,0.25);border-radius:18px;padding:30px;backdrop-filter:blur(25px);position:relative;overflow:hidden;margin-top:20px;}
+.login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--neon-gold),transparent);}
+.form-group{margin-bottom:14px;text-align:left;}
+.form-label{font-family:'Share Tech Mono';font-size:9px;color:var(--text-muted);letter-spacing:3px;margin-bottom:6px;display:block;}
+.form-input{width:100%;background:rgba(0,8,20,0.9);border:1px solid rgba(255,215,0,0.2);border-radius:9px;padding:12px 15px;color:var(--text-primary);font-family:'Exo 2';font-size:14px;outline:none;transition:all 0.3s;}
+.form-input:focus{border-color:var(--neon-gold);box-shadow:0 0 15px rgba(255,215,0,0.15);}
+.form-input::placeholder{color:var(--text-muted);}
+.btn-login{width:100%;padding:15px;background:linear-gradient(135deg,#ffd700,#ff9500);border:none;border-radius:11px;color:#000;font-family:'Orbitron';font-size:13px;font-weight:700;letter-spacing:3px;cursor:pointer;transition:all 0.3s;margin-top:6px;}
+.btn-login:hover{transform:translateY(-2px);box-shadow:0 12px 35px rgba(255,215,0,0.35);}
+.err-msg{background:rgba(255,71,87,0.1);border:1px solid rgba(255,71,87,0.3);border-radius:7px;padding:9px;font-family:'Share Tech Mono';font-size:11px;color:#ff4757;margin-bottom:12px;display:none;}
+.quick-fill{background:rgba(0,245,255,0.04);border:var(--border-glow);border-radius:8px;padding:10px;margin-top:14px;font-family:'Share Tech Mono';font-size:10px;color:var(--text-muted);cursor:pointer;transition:all 0.2s;}
+.quick-fill:hover{border-color:var(--neon-cyan);color:var(--neon-cyan);}
+.back-link{margin-top:16px;font-family:'Share Tech Mono';font-size:10px;color:var(--text-muted);}
+.back-link a{color:var(--neon-cyan);cursor:pointer;text-decoration:none;}
+
+/* ===== MAIN LAYOUT ===== */
+#adminScreen{display:none;flex-direction:column;min-height:100vh;position:relative;z-index:5;}
+.admin-header{padding:12px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,215,0,0.15);background:rgba(6,10,20,0.98);backdrop-filter:blur(20px);position:sticky;top:0;z-index:50;flex-wrap:wrap;gap:8px;}
+.header-logo{font-family:'Orbitron';font-size:20px;font-weight:900;}
+.header-logo span{color:var(--neon-gold);}
+.admin-badge{background:linear-gradient(135deg,#ffd700,#ff9500);color:#000;padding:4px 14px;border-radius:20px;font-family:'Orbitron';font-size:9px;letter-spacing:2px;font-weight:700;}
+.header-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.hud-time{font-family:'Share Tech Mono';font-size:10px;color:var(--neon-gold);}
+.sync-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--neon-green);box-shadow:var(--glow-green);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.btn-sm{padding:7px 14px;border-radius:7px;font-family:'Orbitron';font-size:9px;cursor:pointer;letter-spacing:1px;transition:all 0.3s;border:none;}
+.btn-logout{background:rgba(255,71,87,0.1);border:1px solid rgba(255,71,87,0.35);color:#ff4757;}
+.btn-logout:hover{background:rgba(255,71,87,0.25);}
+.btn-main-app{background:rgba(0,245,255,0.1);border:var(--border-glow);color:var(--neon-cyan);}
+.btn-main-app:hover{background:rgba(0,245,255,0.2);}
+
+/* ===== BODY LAYOUT ===== */
+.admin-body{display:flex;flex:1;min-height:calc(100vh - 58px);}
+.sidebar{width:220px;background:rgba(0,5,15,0.9);border-right:1px solid rgba(255,215,0,0.1);padding:14px 0;flex-shrink:0;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;}
+.sidebar-section{font-family:'Share Tech Mono';font-size:8px;color:var(--text-muted);letter-spacing:3px;padding:10px 18px 5px;opacity:0.6;}
+.nav-item{padding:11px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all 0.3s;font-size:10px;font-family:'Orbitron';letter-spacing:1px;color:var(--text-muted);border-left:2px solid transparent;}
+.nav-item:hover,.nav-item.active{background:rgba(255,215,0,0.06);color:var(--neon-gold);border-left:2px solid var(--neon-gold);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.nav-badge{margin-left:auto;background:rgba(255,215,0,0.15);color:var(--neon-gold);padding:2px 7px;border-radius:10px;font-size:8px;}
+
+.content{flex:1;padding:22px;overflow-y:auto;background:rgba(6,10,20,0.4);}
+.panel{display:none;animation:fadeIn 0.3s ease;}
+.panel.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== COMPONENTS ===== */
+.section-title{font-family:'Orbitron';font-size:11px;letter-spacing:4px;color:var(--neon-gold);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(255,215,0,0.3),transparent);}
+.card{background:var(--card-bg);border:var(--border-glow);border-radius:14px;padding:20px;margin-bottom:18px;position:relative;overflow:hidden;transition:all 0.3s;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,215,0,0.4),transparent);}
+.card:hover{border-color:rgba(255,215,0,0.3);box-shadow:0 0 20px rgba(255,215,0,0.05);}
+.card-title{font-family:'Orbitron';font-size:10px;letter-spacing:3px;color:var(--neon-gold);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.card-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(255,215,0,0.2),transparent);}
+
+/* Stat cards */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px;}
+.stat-card{background:var(--card-bg);border:var(--border-glow);border-radius:14px;padding:20px;position:relative;overflow:hidden;transition:all 0.3s;cursor:default;}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--glow-cyan);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--neon-gold),transparent);opacity:0.5;}
+.stat-num{font-family:'Orbitron';font-size:32px;font-weight:900;color:var(--neon-cyan);}
+.stat-num.gold{color:var(--neon-gold);}
+.stat-num.green{color:var(--neon-green);}
+.stat-num.red{color:var(--neon-red);}
+.stat-num.purple{color:var(--neon-purple);}
+.stat-lbl{font-family:'Share Tech Mono';font-size:9px;letter-spacing:3px;color:var(--text-muted);margin-top:5px;}
+.stat-icon{position:absolute;right:14px;top:14px;font-size:24px;opacity:0.2;}
+
+/* Table */
+.data-table{width:100%;border-collapse:collapse;}
+.data-table th{background:rgba(255,215,0,0.06);padding:10px 14px;text-align:left;font-family:'Orbitron';font-size:9px;letter-spacing:2px;color:var(--neon-gold);border-bottom:1px solid rgba(255,215,0,0.15);}
+.data-table td{padding:10px 14px;border-bottom:1px solid rgba(0,245,255,0.05);font-family:'Share Tech Mono';font-size:11px;color:var(--text-primary);}
+.data-table tr:hover td{background:rgba(255,215,0,0.02);}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:8px;font-family:'Orbitron';letter-spacing:1px;}
+.badge-active{background:rgba(57,255,20,0.12);color:var(--neon-green);border:1px solid rgba(57,255,20,0.3);}
+.badge-inactive{background:rgba(255,71,87,0.12);color:#ff4757;border:1px solid rgba(255,71,87,0.3);}
+.badge-admin{background:rgba(255,215,0,0.12);color:var(--neon-gold);border:1px solid rgba(255,215,0,0.3);}
+.badge-role{background:rgba(181,55,242,0.12);color:var(--neon-purple);border:1px solid rgba(181,55,242,0.3);}
+.action-btn{background:rgba(0,245,255,0.08);border:var(--border-glow);color:var(--neon-cyan);padding:4px 9px;border-radius:5px;font-size:8px;cursor:pointer;font-family:'Orbitron';margin-right:4px;transition:all 0.3s;letter-spacing:1px;}
+.action-btn:hover{background:rgba(0,245,255,0.18);}
+.action-btn.del{color:#ff4757;background:rgba(255,71,87,0.08);border-color:rgba(255,71,87,0.3);}
+
+/* Form */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.form-group-inner{margin-bottom:14px;}
+.form-group-inner .form-label{font-family:'Share Tech Mono';font-size:9px;color:var(--text-muted);letter-spacing:3px;margin-bottom:6px;display:block;}
+.btn-action{padding:11px 22px;border:none;border-radius:9px;font-family:'Orbitron';font-size:10px;font-weight:700;cursor:pointer;letter-spacing:2px;transition:all 0.3s;}
+.btn-primary-action{background:linear-gradient(135deg,#ffd700,#ff9500);color:#000;}
+.btn-primary-action:hover{transform:translateY(-1px);box-shadow:var(--glow-gold);}
+.btn-danger{background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.4);color:#ff4757;}
+.btn-cyan{background:rgba(0,245,255,0.1);border:var(--border-glow);color:var(--neon-cyan);}
+.btn-green{background:rgba(57,255,20,0.08);border:1px solid rgba(57,255,20,0.3);color:var(--neon-green);}
+.btn-purple{background:rgba(181,55,242,0.1);border:1px solid rgba(181,55,242,0.3);color:var(--neon-purple);}
+
+/* Chat */
+.chat-window{min-height:250px;max-height:380px;background:rgba(0,5,15,0.7);border-radius:10px;border:var(--border-glow);padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;font-family:'Share Tech Mono';font-size:13px;scroll-behavior:smooth;}
+.msg{padding:10px 13px;border-radius:10px;max-width:88%;line-height:1.6;animation:msgIn 0.3s ease;}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.msg-ai{background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);color:var(--text-primary);align-self:flex-start;}
+.msg-ai::before{content:'🤖 HIREXO AI › ';color:var(--neon-gold);font-size:8px;display:block;margin-bottom:4px;letter-spacing:2px;}
+.msg-user{background:rgba(0,245,255,0.06);border:1px solid rgba(0,245,255,0.18);color:var(--text-primary);align-self:flex-end;text-align:right;}
+.msg-user::before{content:'👑 ADMIN › ';color:var(--neon-cyan);font-size:8px;display:block;margin-bottom:4px;letter-spacing:2px;}
+.input-area{display:flex;gap:8px;align-items:center;background:rgba(0,5,15,0.8);border:var(--border-glow);border-radius:10px;padding:8px 12px;margin-top:12px;}
+.chat-input{flex:1;background:transparent;border:none;outline:none;color:var(--text-primary);font-family:'Exo 2';font-size:14px;}
+.btn-send{width:36px;height:36px;border-radius:7px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;background:linear-gradient(135deg,#ffd700,#ff9500);color:#000;}
+.typing{display:flex;gap:5px;padding:10px;align-self:flex-start;background:rgba(255,215,0,0.04);border-radius:8px;border:1px solid rgba(255,215,0,0.1);}
+.typing span{width:6px;height:6px;border-radius:50%;background:var(--neon-gold);animation:typingDot 1.2s infinite;}
+.typing span:nth-child(2){animation-delay:0.2s}.typing span:nth-child(3){animation-delay:0.4s}
+@keyframes typingDot{0%,100%{transform:translateY(0);opacity:0.4}50%{transform:translateY(-6px);opacity:1}}
+
+/* Upload zone */
+.upload-zone{border:2px dashed rgba(255,215,0,0.25);border-radius:12px;padding:22px;text-align:center;transition:all 0.3s;cursor:pointer;background:rgba(255,215,0,0.01);}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--neon-gold);background:rgba(255,215,0,0.04);box-shadow:var(--glow-gold);}
+.file-item{display:flex;align-items:center;gap:8px;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.1);border-radius:7px;padding:8px 12px;font-family:'Share Tech Mono';font-size:11px;margin-bottom:6px;}
+.train-indicator{display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(57,255,20,0.06);border:1px solid rgba(57,255,20,0.2);border-radius:8px;margin-top:10px;font-family:'Share Tech Mono';font-size:11px;color:var(--neon-green);}
+.loading-bar{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;position:relative;}
+.loading-bar::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,var(--neon-gold),transparent);animation:loading 1.5s linear infinite;}
+@keyframes loading{0%{left:-100%}100%{left:200%}}
+
+/* Activity log */
+.activity-item{display:flex;justify-content:space-between;align-items:center;padding:9px;border-bottom:1px solid rgba(0,245,255,0.06);font-family:'Share Tech Mono';font-size:11px;}
+.activity-msg{color:var(--neon-cyan);}
+.activity-time{color:var(--text-muted);font-size:9px;white-space:nowrap;margin-left:10px;}
+
+/* Service card */
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:14px;}
+.svc-card{background:rgba(0,5,15,0.9);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:16px;text-align:center;position:relative;transition:all 0.3s;cursor:pointer;}
+.svc-card:hover{border-color:var(--neon-gold);box-shadow:var(--glow-gold);transform:translateY(-2px);}
+
+/* Mini chart */
+.mini-chart{display:flex;align-items:flex-end;gap:6px;height:60px;padding:0 4px;}
+.chart-bar{flex:1;background:linear-gradient(0deg,rgba(255,215,0,0.6),rgba(255,215,0,0.1));border-radius:3px 3px 0 0;min-height:4px;transition:all 0.5s;}
+
+/* Cloud */
+.cloud-status{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(57,255,20,0.05);border:1px solid rgba(57,255,20,0.2);border-radius:9px;margin-bottom:14px;}
+
+/* Toast */
+#toast{position:fixed;bottom:30px;right:30px;background:rgba(6,10,20,0.97);border:1px solid rgba(255,215,0,0.4);border-radius:10px;padding:12px 20px;font-family:'Share Tech Mono';font-size:12px;color:var(--neon-gold);z-index:9999;display:none;animation:toastIn 0.3s ease;box-shadow:var(--glow-gold);}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:rgba(0,5,15,0.5)}
+::-webkit-scrollbar-thumb{background:rgba(255,215,0,0.3);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,215,0,0.5)}
+
+/* Responsive */
+@media(max-width:900px){.sidebar{width:180px;}.form-row{grid-template-columns:1fr;}}
+@media(max-width:650px){.admin-body{flex-direction:column;}.sidebar{width:100%;height:auto;position:static;display:flex;flex-wrap:wrap;flex-direction:row;gap:2px;padding:8px;border-right:none;border-bottom:1px solid rgba(255,215,0,0.1);}.nav-item{padding:8px 12px;border-left:none;border-bottom:2px solid transparent;font-size:9px;}.nav-item.active{border-left:none;border-bottom:2px solid var(--neon-gold);}.sidebar-section{display:none;}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="scanline"></div>
+<div class="corner corner-tl"></div>
+<div class="corner corner-tr"></div>
+<div class="corner corner-bl"></div>
+<div class="corner corner-br"></div>
+<div id="toast"></div>
+
+<!-- ===== LOGIN ===== -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="logo-orb">👑</div>
+    <div style="font-family:'Orbitron';font-size:32px;font-weight:900">Hire<span style="color:var(--neon-gold)">XO</span></div>
+    <div style="font-family:'Share Tech Mono';font-size:10px;color:var(--text-muted);letter-spacing:5px;margin-top:5px">⚡ ADMIN CONTROL CENTER</div>
+    <div class="login-card">
+      <div class="err-msg" id="loginErr"></div>
+      <div class="form-group">
+        <label class="form-label">👑 ADMIN USERNAME</label>
+        <input class="form-input" id="loginUser" placeholder="Admin username" onkeypress="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">🔒 ADMIN PASSWORD</label>
+        <input class="form-input" type="password" id="loginPass" placeholder="Admin password" onkeypress="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn-login" onclick="doLogin()">👑 ACCESS ADMIN CENTER</button>
+      <div class="quick-fill" onclick="quickFill()">⚡ Quick Fill — Default Credentials</div>
+    </div>
+    <div class="back-link">← <a onclick="goToMainApp()">Back to HireXO Main App</a></div>
+  </div>
+</div>
+
+<!-- ===== ADMIN SCREEN ===== -->
+<div id="adminScreen">
+  <div class="admin-header">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="header-logo">Hire<span>XO</span></div>
+      <div class="admin-badge">👑 ADMIN CENTER</div>
+      <div style="font-family:'Share Tech Mono';font-size:9px;color:var(--neon-green);display:flex;align-items:center;gap:5px">
+        <span class="sync-dot"></span> LINKED TO MAIN APP
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="hud-time" id="hudTime">--:--:--</div>
+      <div id="syncStatus" style="font-family:'Share Tech Mono';font-size:9px;color:var(--neon-green)">● SYNCED</div>
+      <button class="btn-sm btn-main-app" onclick="goToMainApp()">🔗 MAIN APP</button>
+      <button class="btn-sm btn-logout" onclick="doLogout()">⏻ LOGOUT</button>
+    </div>
+  </div>
+
+  <div class="admin-body">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-section">CONTROL</div>
+      <div class="nav-item active" id="nav-dashboard" onclick="switchPanel('dashboard')"><span class="nav-icon">📊</span>DASHBOARD</div>
+      <div class="nav-item" id="nav-users" onclick="switchPanel('users')"><span class="nav-icon">👥</span>USERS<span class="nav-badge" id="badge-users">0</span></div>
+      <div class="nav-item" id="nav-activity" onclick="switchPanel('activity')"><span class="nav-icon">📡</span>ACTIVITY</div>
+      <div class="sidebar-section">AI ENGINE</div>
+      <div class="nav-item" id="nav-files" onclick="switchPanel('files')"><span class="nav-icon">🗂️</span>TRAINED FILES<span class="nav-badge" id="badge-files">0</span></div>
+      <div class="nav-item" id="nav-training" onclick="switchPanel('training')"><span class="nav-icon">🧬</span>TRAIN AI</div>
+      <div class="nav-item" id="nav-aichat" onclick="switchPanel('aichat')"><span class="nav-icon">🧠</span>AI CHAT</div>
+      <div class="sidebar-section">MANAGE</div>
+      <div class="nav-item" id="nav-services" onclick="switchPanel('services')"><span class="nav-icon">🛠️</span>SERVICES<span class="nav-badge" id="badge-svcs">0</span></div>
+      <div class="nav-item" id="nav-social" onclick="switchPanel('social')"><span class="nav-icon">🔗</span>SOCIAL LINKS</div>
+      <div class="sidebar-section">SYSTEM</div>
+      <div class="nav-item" id="nav-cloud" onclick="switchPanel('cloud')"><span class="nav-icon">☁️</span>CLOUD SYNC</div>
+      <div class="nav-item" id="nav-settings" onclick="switchPanel('settings')"><span class="nav-icon">⚙️</span>SETTINGS</div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="section-title">📊 SYSTEM DASHBOARD</div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-num" id="cnt-users">0</div><div class="stat-lbl">TOTAL USERS</div></div>
+          <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-num green" id="cnt-active">0</div><div class="stat-lbl">ACTIVE USERS</div></div>
+          <div class="stat-card"><div class="stat-icon">📁</div><div class="stat-num gold" id="cnt-files">0</div><div class="stat-lbl">TRAINED FILES</div></div>
+          <div class="stat-card"><div class="stat-icon">🛠️</div><div class="stat-num purple" id="cnt-svcs">0</div><div class="stat-lbl">SERVICES</div></div>
+          <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-num" id="cnt-msgs">0</div><div class="stat-lbl">AI MESSAGES</div></div>
+          <div class="stat-card"><div class="stat-icon">🧠</div><div class="stat-num green" id="cnt-kb">0</div><div class="stat-lbl">KB CHUNKS</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;flex-wrap:wrap" id="dashGridLayout">
+          <div class="card">
+            <div class="card-title">📈 REGISTRATIONS (7 DAYS)</div>
+            <div class="mini-chart" id="miniChart"></div>
+            <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono';font-size:9px;color:var(--text-muted);margin-top:6px" id="chartLabels"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">⚡ QUICK ACTIONS</div>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <button class="btn-action btn-cyan" onclick="switchPanel('training')">🧬 Train AI with Files</button>
+              <button class="btn-action btn-primary-action" onclick="switchPanel('users')">👥 Manage Users</button>
+              <button class="btn-action btn-green" onclick="exportData()">📥 Export All Data</button>
+              <button class="btn-action btn-purple" onclick="switchPanel('cloud')">☁️ Cloud Sync</button>
+              <button class="btn-action btn-cyan" onclick="refreshDashboard()">🔄 Refresh Data</button>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:0">
+          <div class="card-title">🕐 RECENT SIGNUPS</div>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>NAME</th><th>EMAIL</th><th>ROLE</th><th>JOINED</th><th>STATUS</th></tr></thead>
+              <tbody id="recentUsersBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== USERS ===== -->
+      <div class="panel" id="panel-users">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+          <div class="section-title" style="margin:0">👥 USER MANAGEMENT</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input class="form-input" style="width:200px;padding:8px 12px;font-size:12px" placeholder="🔍 Search..." oninput="searchUsers(this.value)" id="userSearch">
+            <button class="btn-action btn-primary-action" onclick="showAddUserModal()">➕ ADD USER</button>
+          </div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>#</th><th>NAME</th><th>EMAIL</th><th>ROLE</th><th>USERNAME</th><th>JOINED</th><th>STATUS</th><th>ACTIONS</th></tr></thead>
+              <tbody id="allUsersBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Add User Modal (inline) -->
+        <div id="addUserBox" style="display:none" class="card">
+          <div class="card-title">➕ ADD NEW USER</div>
+          <div class="form-row">
+            <div class="form-group-inner"><label class="form-label">FULL NAME</label><input class="form-input" id="newName" placeholder="Full name"></div>
+            <div class="form-group-inner"><label class="form-label">EMAIL</label><input class="form-input" id="newEmail" type="email" placeholder="email@example.com"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group-inner"><label class="form-label">USERNAME</label><input class="form-input" id="newUsername" placeholder="username"></div>
+            <div class="form-group-inner"><label class="form-label">PASSWORD</label><input class="form-input" id="newPassword" type="password" placeholder="Min 6 chars"></div>
+          </div>
+          <div class="form-group-inner" style="margin-bottom:14px">
+            <label class="form-label">ROLE</label>
+            <select class="form-input" id="newRole">
+              <option value="employee">👨‍💼 Employee</option>
+              <option value="employer">🏢 Employer</option>
+              <option value="resource">📚 Resource Partner</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn-action btn-primary-action" onclick="addUserFromAdmin()">💾 SAVE USER</button>
+            <button class="btn-action btn-cyan" onclick="document.getElementById('addUserBox').style.display='none'">CANCEL</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ACTIVITY ===== -->
+      <div class="panel" id="panel-activity">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div class="section-title" style="margin:0">📡 LIVE ACTIVITY LOG</div>
+          <button class="btn-action btn-cyan" onclick="renderActivity()">🔄 REFRESH</button>
+        </div>
+        <div class="card">
+          <div id="activityLog" style="max-height:600px;overflow-y:auto;display:flex;flex-direction:column;gap:2px"></div>
+        </div>
+      </div>
+
+      <!-- ===== TRAINED FILES ===== -->
+      <div class="panel" id="panel-files">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <div class="section-title" style="margin:0">🗂️ TRAINED FILES DATABASE</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-action btn-cyan" onclick="exportKB()">📥 EXPORT KB</button>
+            <button class="btn-action btn-danger" onclick="clearAllFiles()">🗑️ CLEAR ALL</button>
+          </div>
+        </div>
+        <div class="card"><div id="filesLog" style="max-height:500px;overflow-y:auto"></div></div>
+      </div>
+
+      <!-- ===== TRAIN AI ===== -->
+      <div class="panel" id="panel-training">
+        <div class="section-title">🧬 ADMIN-ONLY TRAINING CENTER</div>
+        <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-family:'Share Tech Mono';font-size:11px;color:var(--neon-gold);display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">🔐</span>
+          <span>Training sirf Admin ke paas available hai. Yahan train karein — sabhi users ka AI automatically trained data se jawab dega. Users training section DEKH sakte hain lekin use kar NAHI sakte.</span>
+        </div>
+        <div class="card">
+          <div class="upload-zone" id="adminUploadZone"
+            onclick="document.getElementById('adminFileInput').click()"
+            ondragover="event.preventDefault();this.classList.add('dragover')"
+            ondragleave="this.classList.remove('dragover')"
+            ondrop="handleDrop(event)">
+            <div style="font-size:42px;margin-bottom:10px">🧬</div>
+            <div style="font-family:'Orbitron';font-size:14px;color:var(--neon-gold);margin-bottom:8px">DROP FILES TO TRAIN AI</div>
+            <div style="font-size:11px;color:var(--text-muted);line-height:2">PDF · Images · HTML · JSX · JS · Word · Text · CSV · XLSX · PPTX · Any Format</div>
+          </div>
+          <input type="file" id="adminFileInput" style="display:none" multiple accept="*/*" onchange="handleFiles(this.files)">
+          <div id="adminFileList" style="margin-top:12px"></div>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button class="btn-action btn-primary-action" style="flex:1" onclick="trainAI()">🧠 TRAIN NEURAL ENGINE</button>
+            <button class="btn-action btn-danger" onclick="clearQueue()">CLEAR</button>
+          </div>
+          <div id="trainingBar" style="display:none;margin-top:12px" class="loading-bar"></div>
+          <div id="trainStatus" style="display:none;margin-top:10px" class="train-indicator">🟢 <span id="trainStatusText">Processing...</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📊 KB STATS</div>
+          <div style="display:flex;gap:14px;flex-wrap:wrap">
+            <div style="background:rgba(0,5,15,0.8);border:var(--border-glow);border-radius:9px;padding:14px;flex:1;min-width:120px;text-align:center">
+              <div style="font-family:'Orbitron';font-size:24px;color:var(--neon-cyan)" id="kbChunks">0</div>
+              <div style="font-family:'Share Tech Mono';font-size:9px;color:var(--text-muted);margin-top:4px">KB CHUNKS</div>
+            </div>
+            <div style="background:rgba(0,5,15,0.8);border:var(--border-glow);border-radius:9px;padding:14px;flex:1;min-width:120px;text-align:center">
+              <div style="font-family:'Orbitron';font-size:24px;color:var(--neon-green)" id="trainedFilesCount">0</div>
+              <div style="font-family:'Share Tech Mono';font-size:9px;color:var(--text-muted);margin-top:4px">FILES TRAINED</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== AI CHAT ===== -->
+      <div class="panel" id="panel-aichat">
+        <div class="section-title">🧠 ADMIN AI BRAIN</div>
+        <div class="card">
+          <div class="chat-window" id="adminChatWindow">
+            <div class="msg msg-ai">Admin Neural Mode active. Main trained data se answer deta hoon. Koi bhi sawaal poochiye!</div>
+          </div>
+          <div class="input-area">
+            <input class="chat-input" id="chatInput" placeholder="Admin command to AI..." onkeypress="if(event.key==='Enter')sendAdminMsg()">
+            <button class="btn-send" onclick="sendAdminMsg()">➤</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SERVICES ===== -->
+      <div class="panel" id="panel-services">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+          <div class="section-title" style="margin:0">🛠️ SERVICES MANAGER</div>
+        </div>
+        <p style="font-family:'Share Tech Mono';font-size:10px;color:var(--text-muted);margin-bottom:16px;line-height:1.8">Yahan services add karo — main app mein sabhi users ko automatically milegi. HTML/JSX upload karo → auto-repair engine sab theek karega → AI bhi train hoga.</p>
+        <!-- Add Service Form -->
+        <div class="card">
+          <div class="card-title">➕ ADD NEW SERVICE</div>
+          <div class="form-row">
+            <div class="form-group-inner"><label class="form-label">SERVICE NAME</label><input class="form-input" id="svcName" placeholder="e.g. Smart Calculator"></div>
+            <div class="form-group-inner"><label class="form-label">ICON (emoji)</label><input class="form-input" id="svcIcon" placeholder="🧮" maxlength="4" style="font-size:22px"></div>
+          </div>
+          <div class="form-group-inner"><label class="form-label">DESCRIPTION</label><input class="form-input" id="svcDesc" placeholder="Short description"></div>
+          <div onclick="document.getElementById('svcFileInp').click()" style="border:2px dashed rgba(255,215,0,0.25);border-radius:9px;padding:18px;text-align:center;cursor:pointer;margin-bottom:12px;transition:all 0.3s" onmouseover="this.style.borderColor='var(--neon-gold)'" onmouseout="this.style.borderColor='rgba(255,215,0,0.25)'">
+            <div style="font-size:26px">📂</div>
+            <div style="font-family:'Orbitron';font-size:10px;color:var(--neon-gold);margin-top:6px;letter-spacing:2px">SELECT HTML / JSX / JS FILE</div>
+            <div id="svcFileName" style="font-family:'Share Tech Mono';font-size:10px;color:var(--neon-green);margin-top:5px">No file selected</div>
+          </div>
+          <input type="file" id="svcFileInp" style="display:none" accept=".html,.htm,.jsx,.js,.tsx,.ts" onchange="svcFileSelected(this)">
+          <div id="svcRepairLog" style="display:none;background:rgba(57,255,20,0.05);border:1px solid rgba(57,255,20,0.2);border-radius:8px;padding:10px;margin-bottom:10px;font-family:'Share Tech Mono';font-size:11px;color:var(--neon-green);max-height:100px;overflow-y:auto"></div>
+          <button class="btn-action btn-primary-action" style="width:100%" onclick="addService()">⚡ ADD TO SERVICES</button>
+        </div>
+        <!-- Services Grid -->
+        <div class="card">
+          <div class="card-title">📦 ALL SERVICES</div>
+          <div class="svc-grid" id="svcsGrid"></div>
+        </div>
+      </div>
+
+      <!-- ===== SOCIAL LINKS ===== -->
+      <div class="panel" id="panel-social">
+        <div class="section-title">🔗 SOCIAL LINKS OVERVIEW</div>
+        <div class="card">
+          <div id="socialSummary" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+      </div>
+
+      <!-- ===== CLOUD SYNC ===== -->
+      <div class="panel" id="panel-cloud">
+        <div class="section-title">☁️ CLOUD / SERVER SYNC</div>
+        <div class="card">
+          <div class="cloud-status">
+            <span class="sync-dot"></span>
+            <span style="font-family:'Share Tech Mono';font-size:10px;color:var(--neon-green)" id="cloudStatusTxt">● Local: Saved</span>
+          </div>
+          <div style="font-family:'Share Tech Mono';font-size:10px;color:var(--text-muted);margin-bottom:14px;line-height:1.8">
+            Sab data <span style="color:var(--neon-cyan)">IndexedDB + localStorage</span> mein auto-save hota hai.<br>
+            <span style="color:var(--neon-gold)">JSONBin.io</span> ka free API key se cloud backup enable karein.
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+            <button class="btn-action btn-cyan" onclick="localSave()">💾 SAVE NOW</button>
+            <button class="btn-action btn-purple" onclick="cloudLoad()">☁️ LOAD FROM CLOUD</button>
+            <button class="btn-action btn-green" onclick="exportData()">📥 EXPORT JSON</button>
+            <button class="btn-action" style="background:rgba(255,149,0,0.08);border:1px solid rgba(255,149,0,0.3);color:var(--neon-orange)" onclick="importData()">📤 IMPORT JSON</button>
+          </div>
+          <div class="form-group-inner"><label class="form-label">JSONBIN.IO MASTER KEY</label>
+            <input class="form-input" id="cloudKey" type="password" placeholder="$2a$10$... (get free at jsonbin.io)">
+            <div style="font-family:'Share Tech Mono';font-size:9px;color:var(--text-muted);margin-top:4px">jsonbin.io → free signup → API Keys → Master Key</div>
+          </div>
+          <div class="form-group-inner"><label class="form-label">BIN ID</label>
+            <input class="form-input" id="cloudBinId" placeholder="Auto-generated ya paste karein...">
+          </div>
+          <button class="btn-action btn-primary-action" onclick="saveCloudKeys()">☁️ SAVE & CONNECT CLOUD</button>
+        </div>
+        <!-- Data Stats -->
+        <div class="card">
+          <div class="card-title">📊 DATA OVERVIEW</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">
+            <div style="background:rgba(0,5,15,0.8);border:var(--border-glow);border-radius:9px;padding:14px;text-align:center">
+              <div style="font-family:'Orbitron';font-size:22px;color:var(--neon-cyan)" id="snap-users">0</div>
+              <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--text-muted);margin-top:4px">USERS</div>
+            </div>
+            <div style="background:rgba(0,5,15,0.8);border:var(--border-glow);border-radius:9px;padding:14px;text-align:center">
+              <div style="font-family:'Orbitron';font-size:22px;color:var(--neon-green)" id="snap-files">0</div>
+              <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--text-muted);margin-top:4px">TRAINED FILES</div>
+            </div>
+            <div style="background:rgba(0,5,15,0.8);border:var(--border-glow);border-radius:9px;padding:14px;text-align:center">
+              <div style="font-family:'Orbitron';font-size:22px;color:var(--neon-gold)" id="snap-svcs">0</div>
+              <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--text-muted);margin-top:4px">SERVICES</div>
+            </div>
+            <div style="background:rgba(0,5,15,0.8);border:var(--border-glow);border-radius:9px;padding:14px;text-align:center">
+              <div style="font-family:'Orbitron';font-size:22px;color:var(--neon-purple)" id="snap-kb">0</div>
+              <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--text-muted);margin-top:4px">KB CHUNKS</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SETTINGS ===== -->
+      <div class="panel" id="panel-settings">
+        <div class="section-title">⚙️ SYSTEM SETTINGS</div>
+        <div class="card">
+          <div class="card-title">🔑 ADMIN CREDENTIALS</div>
+          <div class="form-row">
+            <div class="form-group-inner"><label class="form-label">NEW USERNAME (optional)</label><input class="form-input" id="newAdminUser" placeholder="New username"></div>
+            <div class="form-group-inner"><label class="form-label">NEW PASSWORD</label><input class="form-input" id="newAdminPass" type="password" placeholder="New password"></div>
+          </div>
+          <button class="btn-action btn-primary-action" onclick="saveAdminCreds()">💾 SAVE CREDENTIALS</button>
+        </div>
+        <div class="card">
+          <div class="card-title">📢 SYSTEM ANNOUNCEMENT</div>
+          <textarea class="form-input" id="sysAnnounce" rows="3" placeholder="Message to all users..." style="resize:vertical;line-height:1.6"></textarea>
+          <button class="btn-action btn-cyan" style="margin-top:10px" onclick="saveAnnouncement()">📢 PUBLISH ANNOUNCEMENT</button>
+        </div>
+        <div class="card">
+          <div class="card-title">⚠️ DANGER ZONE</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn-action btn-danger" onclick="resetAllUsers()">⚠️ RESET ALL USERS</button>
+            <button class="btn-action btn-danger" onclick="clearAllKB()">🗑️ CLEAR KNOWLEDGE BASE</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">ℹ️ SYSTEM INFO</div>
+          <div style="font-family:'Share Tech Mono';font-size:10px;line-height:2;color:var(--text-muted)">
+            <div>Version: <span style="color:var(--neon-gold)">HireXO Admin Panel v1.0</span></div>
+            <div>Data Link: <span style="color:var(--neon-cyan)">localStorage (shared with main app)</span></div>
+            <div>Admin ID: <span style="color:var(--neon-green)" id="currentAdminDisplay">—</span></div>
+            <div>Last Login: <span style="color:var(--neon-purple)" id="lastLoginDisplay">—</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /admin-body -->
+</div><!-- /adminScreen -->
+
+<script>
+// ===== CONSTANTS & STATE =====
+const ADMIN_KEY_USER='hxAdminUser';
+const ADMIN_KEY_PASS='hxAdminPass';
+const DEFAULT_ADMIN={username:'hirexo_admin',password:'Admin@HireXO2025',name:'HireXO Admin'};
+let currentAdmin=null;
+let trainFiles=[];
+let pendingSvc=null;
+let knowledgeBase=[];
+let CLOUD_KEY=localStorage.getItem('hxCloudApiKey')||'';
+let CLOUD_BIN=localStorage.getItem('hxCloudBinId')||'';
+
+// ===== DB HELPERS (shared with main app via localStorage) =====
+const DB={
+  getUsers(){try{return JSON.parse(localStorage.getItem('hxUsers')||'[]');}catch(e){return[];}},
+  saveUsers(u){localStorage.setItem('hxUsers',JSON.stringify(u));},
+  getActivity(){try{return JSON.parse(localStorage.getItem('hxActivity')||'[]');}catch(e){return[];}},
+  addActivity(msg){var a=this.getActivity();a.unshift({msg,time:new Date().toLocaleTimeString()});localStorage.setItem('hxActivity',JSON.stringify(a.slice(0,300)));},
+  getTrainedFiles(){try{return JSON.parse(localStorage.getItem('hxFiles')||'[]');}catch(e){return[];}},
+  addFile(f){var files=this.getTrainedFiles();files.push({...f,id:Date.now()});localStorage.setItem('hxFiles',JSON.stringify(files));},
+  getMsgCount(){return parseInt(localStorage.getItem('hxMsgCount')||0);},
+  getServices(){try{return JSON.parse(localStorage.getItem('hxAdminServices')||localStorage.getItem('hxServices')||'[]');}catch(e){return[];}},
+  saveServices(s){localStorage.setItem('hxAdminServices',JSON.stringify(s));},
+  getSocialLinks(){try{return JSON.parse(localStorage.getItem('hxSocialLinks')||'{}');}catch(e){return{};}},
+  getKnowledge(){try{return JSON.parse(localStorage.getItem('hxKnowledge')||'[]');}catch(e){return[];}},
+  saveKnowledge(k){localStorage.setItem('hxKnowledge',JSON.stringify(k));},
+  getAnnouncement(){return localStorage.getItem('hxAnnounce')||'';},
+  saveAnnouncement(msg){localStorage.setItem('hxAnnounce',msg);}
+};
+
+// ===== LOGIN =====
+function quickFill(){
+  var adminUser=localStorage.getItem(ADMIN_KEY_USER)||DEFAULT_ADMIN.username;
+  var adminPass=localStorage.getItem(ADMIN_KEY_PASS)||DEFAULT_ADMIN.password;
+  document.getElementById('loginUser').value=adminUser;
+  document.getElementById('loginPass').value=adminPass;
+}
+
+function doLogin(){
+  var u=(document.getElementById('loginUser').value||'').trim();
+  var p=document.getElementById('loginPass').value||'';
+  var err=document.getElementById('loginErr');
+  err.style.display='none';
+  if(!u||!p){err.textContent='ID aur password dono enter karein';err.style.display='block';return;}
+  var adminUser=localStorage.getItem(ADMIN_KEY_USER)||DEFAULT_ADMIN.username;
+  var adminPass=localStorage.getItem(ADMIN_KEY_PASS)||DEFAULT_ADMIN.password;
+  if(u===adminUser&&p===adminPass){
+    currentAdmin={username:u,name:DEFAULT_ADMIN.name};
+    localStorage.setItem('hxAdminLastLogin',new Date().toISOString());
+    DB.addActivity('Admin Panel login: '+u);
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('adminScreen').style.display='flex';
+    document.getElementById('currentAdminDisplay').textContent=u;
+    document.getElementById('lastLoginDisplay').textContent=new Date().toLocaleString();
+    initAdmin();
+    showToast('👑 Welcome, '+DEFAULT_ADMIN.name+'!');
+  } else {
+    err.textContent='❌ Galat username ya password';err.style.display='block';
+    document.getElementById('loginPass').value='';
+  }
+}
+
+function doLogout(){
+  currentAdmin=null;
+  document.getElementById('adminScreen').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+  showToast('Logged out');
+}
+
+function goToMainApp(){
+  // Try to open main app — works if files are in same folder
+  var main=window.location.href.replace('HireXO_Admin_Panel.html','HireXO_v6_Final.html');
+  window.open(main,'_blank');
+}
+
+// ===== INIT =====
+function initAdmin(){
+  knowledgeBase=DB.getKnowledge();
+  refreshDashboard();
+  renderBadges();
+  document.getElementById('kbChunks').textContent=knowledgeBase.length;
+  document.getElementById('trainedFilesCount').textContent=DB.getTrainedFiles().length;
+  // Load cloud keys
+  if(CLOUD_KEY){document.getElementById('cloudKey').placeholder='✅ Key saved';}
+  if(CLOUD_BIN){document.getElementById('cloudBinId').value=CLOUD_BIN;}
+  // Announcement
+  var ann=DB.getAnnouncement();
+  if(ann)document.getElementById('sysAnnounce').value=ann;
+  // Auto-refresh every 30s
+  setInterval(()=>{refreshDashboard();renderBadges();document.getElementById('syncStatus').textContent='● SYNCED '+new Date().toLocaleTimeString();},30000);
+}
+
+// ===== PANEL SWITCHING =====
+function switchPanel(name){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  // Lazy render
+  if(name==='users')renderUsers();
+  if(name==='activity')renderActivity();
+  if(name==='files')renderFiles();
+  if(name==='services')renderServices();
+  if(name==='social')renderSocial();
+  if(name==='cloud')updateSnapStats();
+  if(name==='training'){document.getElementById('kbChunks').textContent=knowledgeBase.length;document.getElementById('trainedFilesCount').textContent=DB.getTrainedFiles().length;}
+}
+
+// ===== DASHBOARD =====
+function refreshDashboard(){
+  var users=DB.getUsers();
+  document.getElementById('cnt-users').textContent=users.length;
+  document.getElementById('cnt-active').textContent=users.filter(u=>u.active).length;
+  document.getElementById('cnt-files').textContent=DB.getTrainedFiles().length;
+  var svcs=DB.getServices();document.getElementById('cnt-svcs').textContent=svcs.length;
+  document.getElementById('cnt-msgs').textContent=DB.getMsgCount();
+  knowledgeBase=DB.getKnowledge();
+  document.getElementById('cnt-kb').textContent=knowledgeBase.length;
+  renderRecentUsers();
+  renderMiniChart();
+}
+
+function renderBadges(){
+  document.getElementById('badge-users').textContent=DB.getUsers().length;
+  document.getElementById('badge-files').textContent=DB.getTrainedFiles().length;
+  document.getElementById('badge-svcs').textContent=DB.getServices().length;
+}
+
+function renderRecentUsers(){
+  var users=DB.getUsers().slice(-5).reverse();
+  var tb=document.getElementById('recentUsersBody');tb.innerHTML='';
+  if(!users.length){tb.innerHTML='<tr><td colspan="5" style="color:var(--text-muted);text-align:center;padding:18px">No users yet</td></tr>';return;}
+  users.forEach(u=>{
+    var tr=document.createElement('tr');
+    var d=new Date(u.joinedAt||Date.now());
+    tr.innerHTML=`<td>${u.name}</td><td style="color:var(--text-muted)">${u.email}</td><td><span class="badge badge-role">${u.role}</span></td><td style="color:var(--text-muted)">${d.toLocaleDateString()}</td><td><span class="badge ${u.active?'badge-active':'badge-inactive'}">${u.active?'ACTIVE':'OFFLINE'}</span></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function renderMiniChart(){
+  var users=DB.getUsers();
+  var days=[],labels=[];
+  for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);var ds=d.toDateString();days.push(users.filter(u=>new Date(u.joinedAt||0).toDateString()===ds).length);labels.push(d.toLocaleDateString('en',{weekday:'short'}));}
+  var max=Math.max(...days,1);
+  document.getElementById('miniChart').innerHTML=days.map(c=>`<div class="chart-bar" style="height:${Math.max((c/max)*54,4)}px" title="${c} users"></div>`).join('');
+  document.getElementById('chartLabels').innerHTML=labels.map(l=>`<span style="font-size:9px">${l}</span>`).join('');
+}
+
+// ===== USERS =====
+function renderUsers(filter=''){
+  var users=DB.getUsers().filter(u=>!filter||u.name.toLowerCase().includes(filter.toLowerCase())||u.email.toLowerCase().includes(filter.toLowerCase()));
+  var tb=document.getElementById('allUsersBody');tb.innerHTML='';
+  if(!users.length){tb.innerHTML='<tr><td colspan="8" style="color:var(--text-muted);text-align:center;padding:18px">No users found</td></tr>';return;}
+  users.forEach((u,i)=>{
+    var tr=document.createElement('tr');
+    var d=new Date(u.joinedAt||Date.now());
+    tr.innerHTML=`<td style="color:var(--text-muted)">${i+1}</td><td>${u.name}</td><td style="color:var(--text-muted);font-size:10px">${u.email}</td><td><span class="badge badge-role">${u.role}</span></td><td style="color:var(--neon-cyan)">@${u.username}</td><td style="color:var(--text-muted);font-size:10px">${d.toLocaleDateString()}</td><td><span class="badge ${u.active?'badge-active':'badge-inactive'}">${u.active?'ACTIVE':'OFFLINE'}</span></td><td><button class="action-btn" onclick="toggleUserStatus(${u.id})">${u.active?'DEACTIVATE':'ACTIVATE'}</button><button class="action-btn del" onclick="deleteUser(${u.id})">DELETE</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function searchUsers(v){renderUsers(v);}
+
+function toggleUserStatus(id){
+  var users=DB.getUsers();var u=users.find(x=>x.id==id);
+  if(u){u.active=!u.active;DB.saveUsers(users);renderUsers(document.getElementById('userSearch').value);showToast('User status: '+(u.active?'ACTIVE':'OFFLINE'));}
+}
+
+function deleteUser(id){
+  if(!confirm('Delete this user?'))return;
+  DB.saveUsers(DB.getUsers().filter(u=>u.id!=id));
+  renderUsers();refreshDashboard();renderBadges();showToast('🗑️ User deleted');
+}
+
+function showAddUserModal(){
+  var box=document.getElementById('addUserBox');
+  box.style.display=box.style.display==='none'?'block':'none';
+}
+
+function addUserFromAdmin(){
+  var name=document.getElementById('newName').value.trim();
+  var email=document.getElementById('newEmail').value.trim();
+  var username=document.getElementById('newUsername').value.trim();
+  var pass=document.getElementById('newPassword').value;
+  var role=document.getElementById('newRole').value;
+  if(!name||!email||!username||!pass){showToast('❌ Sab fields bharein');return;}
+  if(pass.length<6){showToast('❌ Password min 6 chars');return;}
+  var users=DB.getUsers();
+  if(users.find(u=>u.email===email)){showToast('❌ Email already exists');return;}
+  if(users.find(u=>u.username===username)){showToast('❌ Username already taken');return;}
+  users.push({id:Date.now(),name,email,username,password:pass,role,joinedAt:new Date().toISOString(),active:false});
+  DB.saveUsers(users);
+  DB.addActivity('Admin added user: '+name);
+  document.getElementById('addUserBox').style.display='none';
+  ['newName','newEmail','newUsername','newPassword'].forEach(id=>document.getElementById(id).value='');
+  renderUsers();refreshDashboard();renderBadges();
+  showToast('✅ User added: '+name);
+}
+
+// ===== ACTIVITY =====
+function renderActivity(){
+  var acts=DB.getActivity();
+  var div=document.getElementById('activityLog');div.innerHTML='';
+  if(!acts.length){div.innerHTML='<div style="color:var(--text-muted);text-align:center;padding:20px;font-family:Share Tech Mono;font-size:11px">No activity yet</div>';return;}
+  acts.forEach(a=>{
+    var d=document.createElement('div');d.className='activity-item';
+    d.innerHTML=`<span class="activity-msg">▶ ${a.msg}</span><span class="activity-time">${a.time}</span>`;
+    div.appendChild(d);
+  });
+}
+
+// ===== FILES =====
+function renderFiles(){
+  var files=DB.getTrainedFiles();
+  var div=document.getElementById('filesLog');
+  if(!files.length){div.innerHTML='<div style="color:var(--text-muted);text-align:center;padding:20px;font-family:Share Tech Mono;font-size:11px">No files trained yet</div>';return;}
+  div.innerHTML=files.map(f=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-bottom:1px solid rgba(255,215,0,0.06)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">${getFileIcon(f.name)}</span>
+      <div>
+        <div style="color:var(--neon-gold);font-family:Share Tech Mono;font-size:11px">${f.name}</div>
+        <div style="color:var(--text-muted);font-size:9px">${f.user||'Admin'} · ${f.time}</div>
+      </div>
+    </div>
+    <span class="badge badge-active">TRAINED</span>
+  </div>`).join('');
+}
+
+function exportKB(){
+  var kb=DB.getKnowledge();
+  var blob=new Blob([kb.join('\n\n---\n\n')],{type:'text/plain'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hirexo_knowledge_base.txt';a.click();
+  showToast('📥 Knowledge Base exported!');
+}
+
+function clearAllFiles(){
+  if(!confirm('Sab trained files aur knowledge base clear karein?'))return;
+  localStorage.removeItem('hxFiles');localStorage.removeItem('hxKnowledge');
+  knowledgeBase=[];renderFiles();refreshDashboard();
+  showToast('🗑️ All files cleared');DB.addActivity('Admin cleared all trained files');
+}
+
+function clearAllKB(){clearAllFiles();}
+
+// ===== TRAIN AI =====
+function handleFiles(files){Array.from(files).forEach(f=>{if(!trainFiles.find(x=>x.name===f.name)){trainFiles.push(f);renderTrainList();}});}
+function handleDrop(e){e.preventDefault();document.getElementById('adminUploadZone').classList.remove('dragover');handleFiles(e.dataTransfer.files);}
+
+function renderTrainList(){
+  var div=document.getElementById('adminFileList');div.innerHTML='';
+  trainFiles.forEach((f,i)=>{
+    var item=document.createElement('div');item.className='file-item';
+    item.innerHTML=`<span>${getFileIcon(f.name)}</span><span style="flex:1;color:var(--neon-gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span><span style="color:var(--text-muted);font-size:10px">${(f.size/1024).toFixed(1)}KB</span><span style="cursor:pointer;color:#ff5555;padding:2px 8px" onclick="removeTrainFile(${i})">✕</span>`;
+    div.appendChild(item);
+  });
+}
+
+function removeTrainFile(i){trainFiles.splice(i,1);renderTrainList();}
+function clearQueue(){trainFiles=[];renderTrainList();}
+
+async function trainAI(){
+  if(!trainFiles.length){showToast('❌ Files add karein pehle');return;}
+  document.getElementById('trainingBar').style.display='block';
+  document.getElementById('trainStatus').style.display='flex';
+  var statusText=document.getElementById('trainStatusText');
+  var processed=0;
+  for(var f of trainFiles){
+    statusText.textContent='Processing: '+f.name;
+    await new Promise(r=>setTimeout(r,500));
+    try{
+      var text=await extractText(f);
+      var chunk={content:text,filename:f.name,user:'Admin',time:new Date().toISOString()};
+      knowledgeBase.push(text);
+      DB.saveKnowledge(knowledgeBase.slice(-500));
+      DB.addFile({name:f.name,user:'Admin',time:new Date().toLocaleTimeString()});
+      DB.addActivity('Admin trained: '+f.name);
+      processed++;
+    }catch(e){console.error(e);}
+  }
+  document.getElementById('trainingBar').style.display='none';
+  statusText.textContent='✅ '+processed+' files trained! KB: '+knowledgeBase.length+' chunks';
+  document.getElementById('kbChunks').textContent=knowledgeBase.length;
+  document.getElementById('trainedFilesCount').textContent=DB.getTrainedFiles().length;
+  refreshDashboard();renderBadges();
+  showToast('✅ AI trained with '+processed+' files!');
+  trainFiles=[];renderTrainList();
+}
+
+// ===== AI CHAT =====
+function sendAdminMsg(){
+  var inp=document.getElementById('chatInput');var text=inp.value.trim();if(!text)return;
+  addMsg(text,'user');inp.value='';
+  var tw=showTyping();
+  setTimeout(()=>{tw.remove();var reply=selfAnswer(text);addMsg('[Admin] '+reply,'ai');},700+Math.random()*500);
+}
+
+function addMsg(text,who){
+  var cw=document.getElementById('adminChatWindow');
+  var d=document.createElement('div');d.className='msg msg-'+who;d.textContent=text;
+  cw.appendChild(d);cw.scrollTop=cw.scrollHeight;
+}
+
+function showTyping(){
+  var cw=document.getElementById('adminChatWindow');
+  var t=document.createElement('div');t.className='typing';t.innerHTML='<span></span><span></span><span></span>';
+  cw.appendChild(t);cw.scrollTop=cw.scrollHeight;return t;
+}
+
+function selfAnswer(query){
+  var q=query.toLowerCase();
+  var kb=knowledgeBase.join(' ');
+  if(kb.length>50){
+    var words=q.split(' ').filter(w=>w.length>3);
+    var sentences=kb.split(/[.!?\n]+/).filter(s=>s.trim().length>20);
+    var scored=sentences.map(s=>{var sl=s.toLowerCase();var score=words.filter(w=>sl.includes(w)).length;return{s,score};}).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,3);
+    if(scored.length)return'📚 Training data se:\n\n'+scored.map(x=>x.s.trim()).join('. ').substring(0,500);
+  }
+  if(q.includes('user')||q.includes('users'))return'Total users: '+DB.getUsers().length+'. Active: '+DB.getUsers().filter(u=>u.active).length;
+  if(q.includes('file')||q.includes('train'))return'Trained files: '+DB.getTrainedFiles().length+'. Knowledge chunks: '+knowledgeBase.length;
+  if(q.includes('service'))return'Services available: '+DB.getServices().length;
+  return'🤖 Main aapki madad karna chahta hoon. Training data se related kuch poochhein — ya users, files, services ke baare mein!';
+}
+
+// ===== SERVICES =====
+var pendingSvcFile=null;
+function svcFileSelected(input){
+  if(!input.files[0])return;
+  pendingSvcFile=input.files[0];
+  document.getElementById('svcFileName').textContent='✅ '+input.files[0].name;
+  var ext=input.files[0].name.split('.').pop().toLowerCase();
+  var iconMap={html:'🌐',htm:'🌐',jsx:'⚛️',tsx:'⚛️',js:'📜',ts:'📜'};
+  if(!document.getElementById('svcIcon').value)document.getElementById('svcIcon').value=iconMap[ext]||'📦';
+  if(!document.getElementById('svcName').value)document.getElementById('svcName').value=input.files[0].name.replace(/\.[^.]+$/,'').replace(/[-_]/g,' ');
+}
+
+async function addService(){
+  var name=document.getElementById('svcName').value.trim();
+  var icon=document.getElementById('svcIcon').value.trim()||'📦';
+  var desc=document.getElementById('svcDesc').value.trim()||'Custom service';
+  if(!name){showToast('❌ Service name enter karein');return;}
+  if(!pendingSvcFile){showToast('❌ File select karein');return;}
+  var raw=await new Promise(r=>{var fr=new FileReader();fr.onload=e=>r(e.target.result);fr.readAsText(pendingSvcFile);});
+  var svc={id:'svc-'+Date.now(),name,icon,desc,type:'custom',content:raw,filename:pendingSvcFile.name,addedAt:new Date().toISOString()};
+  var svcs=DB.getServices();svcs.push(svc);
+  try{DB.saveServices(svcs);}catch(e){DB.saveServices(svcs.slice(-10));}
+  // Auto-train AI
+  var chunk='[SERVICE: '+name+']\n'+desc+'\n\n'+raw.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').substring(0,4000);
+  knowledgeBase.push(chunk);DB.saveKnowledge(knowledgeBase.slice(-500));
+  DB.addFile({name:'[SVC] '+name,user:'Admin',time:new Date().toLocaleTimeString()});
+  DB.addActivity('Service added + AI trained: '+name);
+  document.getElementById('svcRepairLog').style.display='block';
+  document.getElementById('svcRepairLog').textContent='✅ Service added! AI auto-trained from: '+pendingSvcFile.name;
+  renderServices();refreshDashboard();renderBadges();
+  showToast('✅ '+name+' added + AI trained!');
+  document.getElementById('svcName').value='';document.getElementById('svcIcon').value='';document.getElementById('svcDesc').value='';document.getElementById('svcFileName').textContent='No file selected';pendingSvcFile=null;
+  setTimeout(()=>{document.getElementById('svcRepairLog').style.display='none';},4000);
+}
+
+function renderServices(){
+  var grid=document.getElementById('svcsGrid');grid.innerHTML='';
+  var svcs=DB.getServices();
+  if(!svcs.length){grid.innerHTML='<div style="color:var(--text-muted);font-family:Share Tech Mono;font-size:11px;padding:14px">No custom services yet. Add from above form.</div>';return;}
+  svcs.forEach(svc=>{
+    var card=document.createElement('div');card.className='svc-card';
+    card.innerHTML=`<div style="font-size:30px;margin-bottom:8px">${svc.icon||'📦'}</div><div style="font-family:Orbitron;font-size:9px;color:var(--neon-gold);letter-spacing:1px;margin-bottom:4px">${svc.name}</div><div style="font-family:Share Tech Mono;font-size:9px;color:var(--text-muted);margin-bottom:10px">${svc.desc||''}</div><button onclick="deleteSvc('${svc.id}')" style="padding:5px 10px;background:rgba(255,71,87,0.1);border:1px solid rgba(255,71,87,0.3);color:#ff4757;border-radius:5px;font-size:9px;cursor:pointer;font-family:Orbitron">🗑️ DEL</button>`;
+    grid.appendChild(card);
+  });
+}
+
+function deleteSvc(id){
+  if(!confirm('Delete service?'))return;
+  var svcs=DB.getServices().filter(s=>s.id!==id);
+  DB.saveServices(svcs);
+  renderServices();renderBadges();showToast('🗑️ Service deleted');
+}
+
+// ===== SOCIAL LINKS =====
+function renderSocial(){
+  var links=DB.getSocialLinks();
+  var div=document.getElementById('socialSummary');div.innerHTML='';
+  var platforms=['whatsapp','instagram','facebook','twitter','youtube','linkedin','telegram','snapchat','pinterest','playstore','custom'];
+  var icons={whatsapp:'💬',instagram:'📸',facebook:'📘',twitter:'🐦',youtube:'▶️',linkedin:'💼',telegram:'✈️',snapchat:'👻',pinterest:'📌',playstore:'📱',custom:'🔗'};
+  var names={whatsapp:'WhatsApp',instagram:'Instagram',facebook:'Facebook',twitter:'Twitter/X',youtube:'YouTube',linkedin:'LinkedIn',telegram:'Telegram',snapchat:'Snapchat',pinterest:'Pinterest',playstore:'Play Store',custom:'Custom Link'};
+  var any=false;
+  platforms.forEach(pk=>{
+    var saved=links[pk]||{};
+    var accounts=(saved.accounts||[]);
+    var legacyCount=['profile','group','channel','status'].filter(t=>saved[t]&&saved[t].url).length;
+    var total=accounts.length+legacyCount;
+    if(total>0){any=true;
+      var row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:12px;padding:10px;background:rgba(0,5,15,0.8);border:var(--border-glow);border-radius:10px';
+      row.innerHTML=`<span style="font-size:22px">${icons[pk]}</span><div style="flex:1"><div style="font-family:Orbitron;font-size:10px;color:var(--neon-gold)">${names[pk]}</div><div style="font-family:Share Tech Mono;font-size:9px;color:var(--text-muted);margin-top:3px">${total} account(s) saved</div></div><span class="badge badge-active">${total} LINKED</span>`;
+      div.appendChild(row);
+    }
+  });
+  if(!any)div.innerHTML='<div style="color:var(--text-muted);font-family:Share Tech Mono;font-size:11px;text-align:center;padding:20px">No social links added yet. Add from main app → LINKS tab.</div>';
+}
+
+// ===== CLOUD / SETTINGS =====
+function updateSnapStats(){
+  document.getElementById('snap-users').textContent=DB.getUsers().length;
+  document.getElementById('snap-files').textContent=DB.getTrainedFiles().length;
+  document.getElementById('snap-svcs').textContent=DB.getServices().length;
+  document.getElementById('snap-kb').textContent=DB.getKnowledge().length;
+}
+
+function localSave(){
+  try{
+    var snap={users:DB.getUsers(),files:DB.getTrainedFiles(),services:DB.getServices(),socialLinks:DB.getSocialLinks(),savedAt:new Date().toISOString()};
+    localStorage.setItem('hxServerSnapshot',JSON.stringify(snap));
+    document.getElementById('cloudStatusTxt').textContent='✅ Local saved: '+new Date().toLocaleTimeString();
+    showToast('💾 Data saved locally!');
+    DB.addActivity('Admin manual save');
+  }catch(e){showToast('❌ Save error: '+e.message);}
+}
+
+async function cloudLoad(){
+  if(!CLOUD_KEY||!CLOUD_BIN){showToast('⚠️ Cloud keys missing — Settings mein add karein');return;}
+  try{
+    document.getElementById('cloudStatusTxt').textContent='⏳ Loading...';
+    var resp=await fetch('https://api.jsonbin.io/v3/b/'+CLOUD_BIN+'/latest',{headers:{'X-Master-Key':CLOUD_KEY}});
+    if(!resp.ok){showToast('❌ Cloud load failed: '+resp.status);return;}
+    var d=await resp.json();var data=d.record;
+    if(data.users){DB.saveUsers(data.users);}
+    if(data.services){DB.saveServices(data.services);}
+    if(data.socialLinks){localStorage.setItem('hxSocialLinks',JSON.stringify(data.socialLinks));}
+    if(data.knowledge){DB.saveKnowledge(data.knowledge);knowledgeBase=data.knowledge;}
+    document.getElementById('cloudStatusTxt').textContent='☁️ Loaded: '+new Date().toLocaleTimeString();
+    refreshDashboard();renderBadges();updateSnapStats();
+    showToast('✅ Cloud se sab data load ho gaya!');
+    DB.addActivity('Admin cloud load');
+  }catch(e){showToast('❌ Cloud error: '+e.message);}
+}
+
+function exportData(){
+  var snap={users:DB.getUsers(),files:DB.getTrainedFiles(),services:DB.getServices(),socialLinks:DB.getSocialLinks(),knowledge:DB.getKnowledge(),activity:DB.getActivity(),exportedAt:new Date().toISOString(),version:'HireXO Admin v1'};
+  var blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hirexo_backup_'+Date.now()+'.json';a.click();
+  showToast('📥 Full backup exported!');DB.addActivity('Admin data export');
+}
+
+function importData(){
+  var inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=async function(){
+    if(!inp.files[0])return;
+    var text=await new Promise(r=>{var fr=new FileReader();fr.onload=e=>r(e.target.result);fr.readAsText(inp.files[0]);});
+    try{
+      var data=JSON.parse(text);
+      if(data.users){DB.saveUsers(data.users);}
+      if(data.services){DB.saveServices(data.services);}
+      if(data.socialLinks){localStorage.setItem('hxSocialLinks',JSON.stringify(data.socialLinks));}
+      if(data.knowledge){DB.saveKnowledge(data.knowledge);knowledgeBase=data.knowledge;}
+      refreshDashboard();renderBadges();updateSnapStats();
+      showToast('✅ Data imported! Users: '+(data.users||[]).length);
+      DB.addActivity('Admin data import');
+    }catch(e){showToast('❌ Import failed: '+e.message);}
+  };inp.click();
+}
+
+function saveCloudKeys(){
+  var k=document.getElementById('cloudKey').value.trim();
+  var b=document.getElementById('cloudBinId').value.trim();
+  if(k){CLOUD_KEY=k;localStorage.setItem('hxCloudApiKey',k);}
+  if(b){CLOUD_BIN=b;localStorage.setItem('hxCloudBinId',b);}
+  showToast('☁️ Cloud settings saved!');
+  DB.addActivity('Admin saved cloud settings');
+  document.getElementById('cloudStatusTxt').textContent='☁️ Cloud connected!';
+}
+
+function saveAdminCreds(){
+  var newUser=document.getElementById('newAdminUser').value.trim();
+  var newPass=document.getElementById('newAdminPass').value;
+  if(newUser){localStorage.setItem(ADMIN_KEY_USER,newUser);showToast('✅ Admin username updated');}
+  if(newPass){if(newPass.length<6){showToast('❌ Min 6 chars');return;}localStorage.setItem(ADMIN_KEY_PASS,newPass);showToast('✅ Admin password updated');}
+  if(!newUser&&!newPass)showToast('⚠️ Kuch enter karein');
+  DB.addActivity('Admin credentials updated');
+  document.getElementById('newAdminUser').value='';document.getElementById('newAdminPass').value='';
+}
+
+function saveAnnouncement(){
+  var msg=document.getElementById('sysAnnounce').value.trim();
+  DB.saveAnnouncement(msg);showToast('📢 Announcement saved!');DB.addActivity('Admin posted announcement');
+}
+
+function resetAllUsers(){
+  if(!confirm('ALL USERS DELETE ho jayenge! Sure?'))return;
+  if(!confirm('Ekdum sure hain?'))return;
+  DB.saveUsers([]);refreshDashboard();renderBadges();showToast('All users reset');
+  DB.addActivity('Admin reset all users');
+}
+
+// ===== FILE HELPERS =====
+function getFileIcon(name){var ext=(name||'').split('.').pop().toLowerCase();var icons={pdf:'📄',jpg:'🖼️',jpeg:'🖼️',png:'🖼️',gif:'🖼️',webp:'🖼️',html:'🌐',htm:'🌐',jsx:'⚛️',js:'📜',docx:'📝',doc:'📝',txt:'📋',csv:'📊',xlsx:'📊',xls:'📊',pptx:'📽️',ppt:'📽️',mp3:'🎵',mp4:'🎬',zip:'🗜️'};return icons[ext]||'📁';}
+
+async function extractText(file){
+  return new Promise(resolve=>{
+    var ext=file.name.split('.').pop().toLowerCase();
+    var reader=new FileReader();
+    if(['txt','html','htm','jsx','js','csv','ts','tsx','xml','json','md'].includes(ext)){
+      reader.onload=e=>resolve((e.target.result||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().substring(0,10000));
+      reader.readAsText(file);
+    } else {
+      reader.onload=()=>resolve('[File: '+file.name+' ('+ext.toUpperCase()+', '+(file.size/1024).toFixed(1)+'KB) — Indexed for analysis]');
+      reader.readAsDataURL(file);
+    }
+  });
+}
+
+// ===== TOAST =====
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._timer);t._timer=setTimeout(()=>t.style.display='none',3500);}
+
+// ===== CLOCK =====
+setInterval(()=>{document.getElementById('hudTime').textContent=new Date().toLocaleTimeString('en',{hour12:false});},1000);
+
+// ===== PARTICLES =====
+(function(){var pc=document.createElement('div');pc.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none';document.body.appendChild(pc);for(var i=0;i<30;i++){var p=document.createElement('div');p.style.cssText='position:absolute;border-radius:50%;animation:float linear infinite;opacity:0;background:rgba(255,215,0,0.6)';p.style.left=Math.random()*100+'%';p.style.animationDuration=(8+Math.random()*15)+'s';p.style.animationDelay=(Math.random()*15)+'s';var sz=0.8+Math.random()*2;p.style.width=p.style.height=sz+'px';pc.appendChild(p);}var style=document.createElement('style');style.textContent='@keyframes float{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:0.8}90%{opacity:0.2}100%{transform:translateY(-10vh) scale(1);opacity:0}}';document.head.appendChild(style);})();
+</script>
+</body>
+</html>
